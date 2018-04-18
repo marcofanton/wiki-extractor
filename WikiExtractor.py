@@ -522,7 +522,7 @@ class Extractor(object):
     """
     An extraction task on a article.
     """
-    def __init__(self, id, revid, title, lines):
+    def __init__(self, id, revid, title, category, lines):
         """
         :param id: id of page.
         :param title: tutle of page.
@@ -538,6 +538,7 @@ class Extractor(object):
         self.recursion_exceeded_2_errs = 0  # template recursion within expandTemplate()
         self.recursion_exceeded_3_errs = 0  # parameter recursion
         self.template_title_errs = 0
+        self.category = category
 
     def write_output(self, out, text):
         """
@@ -563,9 +564,9 @@ class Extractor(object):
             out.write('\n')
         else:
             if options.print_revision:
-                header = '<doc id="%s" revid="%s" url="%s" title="%s">\n' % (self.id, self.revid, url, self.title)
+                header = '<doc id="%s" revid="%s" url="%s" title="%s" cat="%s">\n' % (self.id, self.revid, url, self.title, self.category)
             else:
-                header = '<doc id="%s" url="%s" title="%s">\n' % (self.id, url, self.title)
+                header = '<doc id="%s" url="%s" title="%s" cat="%s">\n' % (self.id, url, self.title, self.category)
             footer = "\n</doc>\n"
             if out == sys.stdout:   # option -a or -o -
                 header = header.encode('utf-8')
@@ -2718,6 +2719,8 @@ tagRE = re.compile(r'(.*?)<(/?\w+)[^>]*?>(?:([^<]*)(<.*?>)?)?')
 #                    1     2               3      4
 keyRE = re.compile(r'key="(\d*)"')
 
+InfoboxRE = re.compile(r'{{Infobox ([^|\n}]*)')
+
 def load_templates(file, output_file=None):
     """
     Load templates from :param file:.
@@ -2729,7 +2732,7 @@ def load_templates(file, output_file=None):
     if output_file:
         output = codecs.open(output_file, 'wb', 'utf-8')
     for page_count, page_data in enumerate(pages_from(file)):
-        id, revid, title, ns, page = page_data
+        id, revid, title, ns, category, page = page_data
         if not output_file and (not options.templateNamespace or
                                 not options.moduleNamespace):  # do not know it yet
             # reconstruct templateNamespace and moduleNamespace from the first title
@@ -2778,7 +2781,10 @@ def pages_from(input):
     inText = False
     redirect = False
     title = None
+    category = None
     for line in input:
+        if InfoboxRE.search(line):
+            category = InfoboxRE.search(line).group(1).decode("utf-8").strip()
         if not isinstance(line, text_type): line = line.decode('utf-8')
         if '<' not in line:  # faster than doing re.search()
             if inText:
@@ -2818,13 +2824,14 @@ def pages_from(input):
             page.append(line)
         elif tag == '/page':
             if id != last_id and not redirect:
-                yield (id, revid, title, ns, page)
+                yield (id, revid, title, ns, category, page)
                 last_id = id
                 ns = '0'
             id = None
             revid = None
             title = None
             page = []
+            category = None
 
 
 def process_dump(input_file, template_file, out_file, file_size, file_compress,
@@ -2938,7 +2945,7 @@ def process_dump(input_file, template_file, out_file, file_size, file_compress,
     # Mapper process
     page_num = 0
     for page_data in pages_from(input):
-        id, revid, title, ns, page = page_data
+        id, revid, title, ns, category, page = page_data
         if keepPage(ns, page):
             # slow down
             delay = 0
@@ -2949,7 +2956,7 @@ def process_dump(input_file, template_file, out_file, file_size, file_compress,
                     delay += 10
             if delay:
                 logging.info('Delay %ds', delay)
-            job = (id, revid, title, page, page_num)
+            job = (id, revid, title, category, page, page_num)
             jobs_queue.put(job) # goes to any available extract_process
             page_num += 1
         page = None             # free memory
@@ -2996,9 +3003,9 @@ def extract_process(opts, i, jobs_queue, output_queue):
     while True:
         job = jobs_queue.get()  # job is (id, title, page, page_num)
         if job:
-            id, revid, title, page, page_num = job
+            id, revid, title, category, page, page_num = job
             try:
-                e = Extractor(*job[:4]) # (id, revid, title, page)
+                e = Extractor(*job[:5]) # (id, revid, title, category, page)
                 page = None              # free memory
                 e.extract(out)
                 text = out.getvalue()
@@ -3211,8 +3218,8 @@ def main():
 
         file = fileinput.FileInput(input_file, openhook=fileinput.hook_compressed)
         for page_data in pages_from(file):
-            id, revid, title, ns, page = page_data
-            Extractor(id, revid, title, page).extract(sys.stdout)
+            id, revid, title, ns, category, page = page_data
+            Extractor(id, revid, title, category, page).extract(sys.stdout)
         file.close()
         return
 
@@ -3223,6 +3230,8 @@ def main():
         except:
             logging.error('Could not create: %s', output_path)
             return
+
+    print("Starting...")
 
     process_dump(input_file, args.templates, output_path, file_size,
                  args.compress, args.processes)
