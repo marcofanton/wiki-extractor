@@ -551,7 +551,7 @@ class Extractor(object):
                 'id': self.id,
                 'url': url,
                 'title': self.title,
-                'text': "\n".join(text),
+                'text': text,
                 'cat': self.category
             }
             if options.print_revision:
@@ -631,13 +631,16 @@ class Extractor(object):
         text = self.transform(text)
         text = self.wiki2text(text)
         text = compact(self.clean(text))
-        text = [title_str] + text
-        
+        if options.write_json:
+            text = uncompact(text)  # To structure the text into sections
+        else:
+            text += [self.title] + text
+
         if sum(len(line) for line in text) < options.min_text_length:
             return
-        
+
         self.write_output(out, text)
-        
+
         errs = (self.template_title_errs,
                 self.recursion_exceeded_1_errs,
                 self.recursion_exceeded_2_errs,
@@ -2509,6 +2512,19 @@ listItem = {'*': '<li>%s</li>', '#': '<li>%s</<li>', ';': '<dt>%s</dt>',
             ':': '<dd>%s</dd>'}
 
 
+def uncompact(text):
+    structured = {}
+    currentSection = "Introduction"
+    for chunk in text:
+        if not chunk:
+            continue
+        elif chunk[0] == "." and chunk[-1] == ".":
+            currentSection = chunk[1:-1]
+        else:
+            structured[currentSection] = chunk
+    return structured
+
+
 def compact(text):
     """Deal with headers, lists, empty sections, residuals of tables.
     :param text: convert to HTML.
@@ -2541,7 +2557,7 @@ def compact(text):
             if options.toHTML:
                 page.append("<h%d>%s</h%d>" % (lev, title, lev))
             if title and title[-1] not in '!?':
-                title += '.'    # terminate sentence.
+                title = '.' + title + '.'  # terminate sentence.
             headers[lev] = title
             # drop previous headers
             for i in list(headers.keys()):
@@ -2632,6 +2648,7 @@ def compact(text):
             # Drop preformatted
             if line[0] != ' ':  # dangerous
                 page.append(line)
+
     return page
 
 
