@@ -522,7 +522,7 @@ class Extractor(object):
     """
     An extraction task on a article.
     """
-    def __init__(self, id, revid, title, category, lines):
+    def __init__(self, id, revid, title, category, categorydb, lines):
         """
         :param id: id of page.
         :param title: tutle of page.
@@ -539,6 +539,7 @@ class Extractor(object):
         self.recursion_exceeded_3_errs = 0  # parameter recursion
         self.template_title_errs = 0
         self.category = category
+        self.categorydb = categorydb
 
     def write_output(self, out, text):
         """
@@ -564,9 +565,9 @@ class Extractor(object):
             out.write('\n')
         else:
             if options.print_revision:
-                header = '<doc id="%s" revid="%s" url="%s" title="%s" cat="%s">\n' % (self.id, self.revid, url, self.title, self.category)
+                header = '<doc id="%s" revid="%s" url="%s" title="%s" cat="%s" catdb="%s">\n' % (self.id, self.revid, url, self.title, self.category, " ".join(self.categorydb))
             else:
-                header = '<doc id="%s" url="%s" title="%s" cat="%s">\n' % (self.id, url, self.title, self.category)
+                header = '<doc id="%s" url="%s" title="%s" cat="%s" catdb="%s">\n' % (self.id, url, self.title, self.category, " ".join(self.categorydb))
             footer = "\n</doc>\n"
             if out == sys.stdout:   # option -a or -o -
                 header = header.encode('utf-8')
@@ -2835,7 +2836,7 @@ def pages_from(input):
 
 
 def process_dump(input_file, template_file, out_file, file_size, file_compress,
-                 process_count):
+                 process_count, dico_resource):
     """
     :param input_file: name of the wikipedia dump file; '-' to read from stdin
     :param template_file: optional file with template definitions.
@@ -2956,7 +2957,15 @@ def process_dump(input_file, template_file, out_file, file_size, file_compress,
                     delay += 10
             if delay:
                 logging.info('Delay %ds', delay)
-            job = (id, revid, title, category, page, page_num)
+            try:
+                categorydb = dico_resource["<http://fr.dbpedia.org/resource/" + title.replace(" ", "_") + ">"]
+            except:
+                try:
+                    categorydb = dico_resource["<http://dbpedia.org/resource/" + title.replace(" ", "_") + ">"]
+                except:
+                    categorydb = ["None"]
+                print(title)
+            job = (id, revid, title, category, categorydb, page, page_num)
             jobs_queue.put(job) # goes to any available extract_process
             page_num += 1
         page = None             # free memory
@@ -3003,9 +3012,9 @@ def extract_process(opts, i, jobs_queue, output_queue):
     while True:
         job = jobs_queue.get()  # job is (id, title, page, page_num)
         if job:
-            id, revid, title, category, page, page_num = job
+            id, revid, title, category, categorydb, page, page_num = job
             try:
-                e = Extractor(*job[:5]) # (id, revid, title, category, page)
+                e = Extractor(*job[:6]) # (id, revid, title, category, page)
                 page = None              # free memory
                 e.extract(out)
                 text = out.getvalue()
@@ -3231,10 +3240,21 @@ def main():
             logging.error('Could not create: %s', output_path)
             return
 
+    dico_resource = {}
+    for ttlfile in ["instance_types_fr.ttl", "instance_types_en.ttl"]:
+        with open(ttlfile, "r") as f:
+            for line in f:
+                resource = line.split()[0]
+                resource_type = line.split()[2]
+                if resource in dico_resource:
+                    dico_resource[resource].append(resource_type)
+                else:
+                    dico_resource[resource] = [resource_type]
+
     print("Starting...")
 
     process_dump(input_file, args.templates, output_path, file_size,
-                 args.compress, args.processes)
+                 args.compress, args.processes, dico_resource)
 
 def createLogger(quiet, debug):
     logger = logging.getLogger()
