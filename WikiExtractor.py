@@ -553,7 +553,7 @@ class Extractor(object):
                 'title': self.title,
                 'text': text,
                 'cat': self.category,
-                'lang': url[8:10]
+                'lang': url.split("//")[1].split(".")[0]
             }
             if options.print_revision:
                 json_data['revid'] = self.revid
