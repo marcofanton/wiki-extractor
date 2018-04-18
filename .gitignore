@@ -88,3 +88,6 @@ ENV/
 
 # DBPedia files
 *.ttl
+
+# Output files
+text/
