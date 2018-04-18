@@ -551,7 +551,8 @@ class Extractor(object):
                 'id': self.id,
                 'url': url,
                 'title': self.title,
-                'text': "\n".join(text)
+                'text': "\n".join(text),
+                'cat': self.category
             }
             if options.print_revision:
                 json_data['revid'] = self.revid
