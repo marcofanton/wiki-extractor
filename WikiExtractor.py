@@ -552,7 +552,8 @@ class Extractor(object):
                 'url': url,
                 'title': self.title,
                 'text': text,
-                'cat': self.category
+                'cat': self.category,
+                'lang': url[8:10]
             }
             if options.print_revision:
                 json_data['revid'] = self.revid
@@ -633,6 +634,7 @@ class Extractor(object):
         text = compact(self.clean(text))
         if options.write_json:
             text = uncompact(text)  # To structure the text into sections
+            # text = strip_empty(text)
         else:
             text += [self.title] + text
 
@@ -2512,16 +2514,19 @@ listItem = {'*': '<li>%s</li>', '#': '<li>%s</<li>', ';': '<dt>%s</dt>',
             ':': '<dd>%s</dd>'}
 
 
+def strip_empty(text):
+    return [chunk for chunk in text if chunk != ""]
+
+
 def uncompact(text):
-    structured = {}
-    currentSection = "Introduction"
+    structured = ["Introduction"]
     for chunk in text:
-        if not chunk:
+        if not chunk or chunk == "":
             continue
         elif chunk[0] == "." and chunk[-1] == ".":
-            currentSection = chunk[1:-1]
+            structured.append(chunk[1:-1])
         else:
-            structured[currentSection] = chunk
+            structured[-1] += "\n" + chunk
     return structured
 
 
