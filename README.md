@@ -34,13 +34,15 @@ The output is stored in several files of similar size in a given directory.
 Each file will contains several documents in this [document format](http://medialab.di.unipi.it/wiki/Document_Format).
 
     usage: WikiExtractor.py [-h] [-o OUTPUT] [-b n[KMG]] [-c] [--json] [--html]
-                            [-l] [-s] [--lists] [-ns ns1,ns2]
-                            [--templates TEMPLATES] [--no-templates] [-r]
-                            [--min_text_length MIN_TEXT_LENGTH]
-                            [--filter_disambig_pages] [-it abbr,b,big]
-                            [-de gallery,timeline,noinclude] [--keep_tables]
-                            [--processes PROCESSES] [-q] [--debug] [-a] [-v]
-                            input
+                        [-l] [-s] [--lists] [-ns ns1,ns2]
+                        [--templates TEMPLATES] [--no-templates] [-r]
+                        [--min_text_length MIN_TEXT_LENGTH]
+                        [--filter_disambig_pages] [-it abbr,b,big]
+                        [-de gallery,timeline,noinclude] [--keep_tables]
+                        [--keep_ref] [--processes PROCESSES] [-q] [--debug]
+                        [-a] [-v]
+                        input
+
 
     Wikipedia Extractor:
     Extracts and cleans text from a Wikipedia database dump and stores output in a
@@ -101,6 +103,8 @@ Each file will contains several documents in this [document format](http://media
                             comma separated list of elements that will be removed
                             from the article text
       --keep_tables         Preserve tables in the output article text
+                            (default=False)
+      --keep_ref            Preserve references (for the json ouptput only)
                             (default=False)
 
     Special:
