@@ -225,6 +225,10 @@ def get_url(uid):
     return "%s?curid=%s" % (options.urlbase, uid)
 
 
+def get_lang(url):
+    return url.split("//")[1].split(".")[0]
+
+
 # =========================================================================
 #
 # MediaWiki Markup Grammar
@@ -553,7 +557,7 @@ class Extractor(object):
                 'title': self.title,
                 'text': text,
                 'cat': self.category,
-                'lang': url.split("//")[1].split(".")[0]
+                'lang': get_lang(url)
             }
             if options.print_revision:
                 json_data['revid'] = self.revid
@@ -633,7 +637,7 @@ class Extractor(object):
         text = self.wiki2text(text)
         text = compact(self.clean(text))
         if options.write_json:
-            text = uncompact(text)  # To structure the text into sections
+            text = uncompact(text, get_lang(get_url(self.id)))  # To structure the text into sections
             # text = strip_empty(text)
         else:
             text += [self.title] + text
@@ -2518,15 +2522,23 @@ def strip_empty(text):
     return [chunk for chunk in text if chunk != ""]
 
 
-def uncompact(text):
-    structured = ["Introduction"]
+useless_sections = {
+    "fr": ["Liens externes", "Articles connexes", "Bibliographie", "Voir aussi", "Annexes", "Références", "Notes", "Notes et références"],
+    "en": ["External links", " Bibliography", "See also", "Further reading", "References"]
+}
+
+
+def uncompact(text, lang):
+    structured = ["Introduction."]
     for chunk in text:
         if not chunk or chunk == "":
             continue
         elif chunk[0] == "." and chunk[-1] == ".":
-            structured.append(chunk[1:-1])
+            if chunk[1:-1] in useless_sections[lang]:
+                break
+            structured.append(chunk[1:])
         else:
-            structured[-1] += "\n" + chunk
+            structured[-1] += " " + chunk
     return structured
 
 
