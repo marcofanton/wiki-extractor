@@ -57,7 +57,17 @@ Each file will contains several documents in this [document format](http://media
     contain several documents formatted as json ojects, one per line, with
     the following structure
 
-        {"id": "", "revid": "", "url":"", "title": "", "text": "..."}
+        {
+          "id": "", 
+          "revid": "", 
+          "url":"", 
+          "title": "", 
+          "lang": "",
+          "text": [
+            "Introduction. Louis Pasteur was a French biologist, microbiologist and chemist...", 
+            "Education and early life. Louis Pasteur was born on..."
+          ]
+        }
 
     Template expansion requires preprocesssng first the whole dump and
     collecting template definitions.
