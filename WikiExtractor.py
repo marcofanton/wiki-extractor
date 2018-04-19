@@ -2537,10 +2537,10 @@ def uncompact(text, lang):
     for chunk in text:
         if not chunk or chunk == "":
             continue
-        elif chunk[0] == "." and chunk[-1] == ".":
+        elif chunk[0] == "{" and chunk[-1] == "}":
             if not options.keep_ref and chunk[1:-1] in useless_sections[lang]:
                 break
-            structured.append(chunk[1:])
+            structured.append(chunk[1:-1] + ".")
         else:
             structured[-1] += " " + chunk
     return structured
@@ -2578,7 +2578,10 @@ def compact(text):
             if options.toHTML:
                 page.append("<h%d>%s</h%d>" % (lev, title, lev))
             if title and title[-1] not in '!?':
-                title = '.' + title + '.'  # terminate sentence.
+                if options.write_json:
+                    title = '{' + title + '}'  # terminate sentence.
+                else:
+                    title += '.'
             headers[lev] = title
             # drop previous headers
             for i in list(headers.keys()):
