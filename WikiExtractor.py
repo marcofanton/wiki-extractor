@@ -142,6 +142,10 @@ options = SimpleNamespace(
     ##
     # Drop tables from the article
     keep_tables = False,
+
+    ##
+    # Drop references from the article
+    keep_ref = False,
     
     ##
     # Whether to preserve links in output
@@ -2534,7 +2538,7 @@ def uncompact(text, lang):
         if not chunk or chunk == "":
             continue
         elif chunk[0] == "." and chunk[-1] == ".":
-            if chunk[1:-1] in useless_sections[lang]:
+            if not options.keep_ref and chunk[1:-1] in useless_sections[lang]:
                 break
             structured.append(chunk[1:])
         else:
@@ -3167,6 +3171,8 @@ def main():
                         help="comma separated list of elements that will be removed from the article text")
     groupP.add_argument("--keep_tables", action="store_true", default=options.keep_tables,
                         help="Preserve tables in the output article text (default=%(default)s)")
+    groupP.add_argument("--keep_ref", action="store_true", default=options.keep_ref,
+                        help="Preserve references (for the json ouptput only) (default=%(default)s)")
     default_process_count = max(1, cpu_count() - 1)
     parser.add_argument("--processes", type=int, default=default_process_count,
                         help="Number of processes to use (default %(default)s)")
@@ -3197,6 +3203,7 @@ def main():
     options.expand_templates = args.no_templates
     options.filter_disambig_pages = args.filter_disambig_pages
     options.keep_tables = args.keep_tables
+    options.keep_ref = args.keep_ref
 
     try:
         power = 'kmg'.find(args.bytes[-1].lower()) + 1
