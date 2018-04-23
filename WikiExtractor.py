@@ -553,6 +553,10 @@ class Extractor(object):
         :param out: a memory file
         :param text: the text of the page
         """
+
+        if self.category:
+            print((self.category + ": " + self.title).encode("utf-8"))
+
         url = get_url(self.id)
         if options.write_json:
             json_data = {
@@ -3276,8 +3280,6 @@ def main():
         except:
             logging.error('Could not create: %s', output_path)
             return
-
-    print("Starting...")
 
     process_dump(input_file, args.templates, output_path, file_size,
                  args.compress, args.processes)
