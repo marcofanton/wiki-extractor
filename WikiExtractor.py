@@ -2825,9 +2825,10 @@ def pages_from(input):
     title = None
     category = None
     for line in input:
-        if InfoboxRE.search(line):
+        if InfoboxRE.search(line) and len(page) == 0:  # so that we make sure it is the page infobox and not a subpart infobox
             category = InfoboxRE.search(line).group(1).decode("utf-8").strip()
-        if not isinstance(line, text_type): line = line.decode('utf-8')
+        if not isinstance(line, text_type):
+            line = line.decode('utf-8')
         if '<' not in line:  # faster than doing re.search()
             if inText:
                 page.append(line)
