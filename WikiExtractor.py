@@ -553,7 +553,6 @@ class Extractor(object):
         :param out: a memory file
         :param text: the text of the page
         """
-
         url = get_url(self.id)
         if options.write_json:
             json_data = {
