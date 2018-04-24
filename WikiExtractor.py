@@ -554,17 +554,14 @@ class Extractor(object):
         :param text: the text of the page
         """
 
-        if self.category:
-            print((self.category + ": " + self.title).encode("utf-8"))
-
         url = get_url(self.id)
         if options.write_json:
             json_data = {
                 'id': self.id,
                 'url': url,
                 'title': self.title,
-                'text': text,
-                'cat': self.category,
+                'text': "\n\n".join(text),
+                'category': self.category,
                 'lang': get_lang(url)
             }
             if options.print_revision:
